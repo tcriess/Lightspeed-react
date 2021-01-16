@@ -79,6 +79,9 @@ const App = () => {
       }
 
       switch (msg.event) {
+        case "info":
+          console.log("WS info: ", offerCandidate)
+
         case "offer":
           console.log("Offer");
           pc.setRemoteDescription(offerCandidate);
