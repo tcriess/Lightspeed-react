@@ -52,7 +52,7 @@ export const ChatBody = styled.div`
   border-radius: 32px;
 
   i {
-    font-weight: 900px;
+    font-weight: 900;
   }
 
   @media only screen and (max-width: 1024px) {

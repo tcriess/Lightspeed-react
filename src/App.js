@@ -1,5 +1,5 @@
 import "./App.css";
-import React, { useEffect, useReducer } from "react";
+import React, { useEffect, useReducer, useState } from "react";
 import { useSocket } from "./context/SocketContext";
 import { useRTC } from "./context/RTCPeerContext";
 import VideoPlayer from "./components/VideoPlayer";
@@ -32,6 +32,7 @@ const App = () => {
   const [state, dispatch] = useReducer(appReducer, initialState);
   const { pc } = useRTC();
   const { socket } = useSocket();
+  const [chathistory, setChathistory] = useState('');
 
   // Offer to receive 1 audio, and 1 video tracks
   pc.addTransceiver("audio", { direction: "recvonly" });
@@ -56,7 +57,7 @@ const App = () => {
       socket.send(
         JSON.stringify({
           event: "candidate",
-          data: JSON.stringify(e.candidate),
+          data: e.candidate, // JSON.stringify(e.candidate),
         })
       );
     }
@@ -71,7 +72,7 @@ const App = () => {
         return;
       }
 
-      const offerCandidate = JSON.parse(msg.data);
+      const offerCandidate = msg.data;
 
       if (!offerCandidate) {
         console.log("Failed to parse offer msg data");
@@ -80,7 +81,17 @@ const App = () => {
 
       switch (msg.event) {
         case "info":
-          console.log("WS info: ", offerCandidate)
+          console.log("WS info: ", offerCandidate);
+          return;
+
+        case "chat":
+          const newLine = offerCandidate.nick + ": " + offerCandidate.message;
+          if (chathistory) {
+            setChathistory(chathistory + String.fromCharCode(13, 10) + newLine);
+          } else {
+            setChathistory(newLine);
+          }
+          return;
 
         case "offer":
           console.log("Offer");
@@ -92,7 +103,7 @@ const App = () => {
             socket.send(
               JSON.stringify({
                 event: "answer",
-                data: JSON.stringify(answer),
+                data: answer,
               })
             );
           } catch (e) {
@@ -121,7 +132,7 @@ const App = () => {
           <VideoPlayer src={state.stream} />
           <VideoDetails viewers={state.viewers} />
         </VideoContainer>
-        <LiveChat></LiveChat>
+        <LiveChat chathistory={chathistory}></LiveChat>
       </MainContainer>
     </>
   );
