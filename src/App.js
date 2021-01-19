@@ -80,9 +80,6 @@ const App = () => {
       }
 
       switch (msg.event) {
-        case "info":
-          console.log("WS info: ", offerCandidate);
-          return;
 
         case "chat":
           const newLine = offerCandidate.nick + ": " + offerCandidate.message;
@@ -118,7 +115,7 @@ const App = () => {
         case "info":
           dispatch({
             type: "info",
-            viewers: JSON.parse(msg.data).no_connections,
+            viewers: msg.data.no_connections,
           });
       }
     };
