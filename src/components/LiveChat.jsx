@@ -5,6 +5,7 @@ import {
   ChatHeading,
   ChatBody,
 } from "../styles/liveChatStyles";
+import Chat from "./Chat";
 
 const LiveChat = () => {
   return (
@@ -16,8 +17,7 @@ const LiveChat = () => {
         </ChatHeading>
 
         <ChatBody>
-          <i className="fas fa-construction fa-3x"></i>
-          <h4>Coming Soon!</h4>
+          <Chat></Chat>
         </ChatBody>
       </ChatMain>
     </ChatContainer>
