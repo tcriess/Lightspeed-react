@@ -24,6 +24,55 @@ const LiveChat = () => {
   const [translationsById, setTranslationsById] = useImmer({})
   const [idtoken, setIdtoken] = useState("");
   const messagesEndRef = useRef();
+  const [ws, setWs] = useState(null);
+  //const prevWs = useRef(null);
+
+  //useEffect(() => {
+  //  prevWs.current = ws;
+  //});
+
+  useEffect(() => {
+    setTranslationsById(() => ({}));
+    setMessages(() => ({list: [], obj: {}}));
+
+    ws?.close();
+    const w = new ReconnectingWebSocket(url);
+    w.addEventListener('open', () => {
+      w.send(JSON.stringify({event: "login", data: {}}));
+    });
+    w.addEventListener('error', (e) => {
+      console.log('ws error:', e)
+    });
+    w.addEventListener('message', (e) => {
+      console.log('ws data:', e.data)
+      //console.log('messages:', messages);
+      //console.log('messagesbyid:', messagesById)
+      const message = JSON.parse(e.data);
+      switch(message.event) {
+        case 'login':
+          console.log('received login event:', message.data)
+          break;
+        case 'chat':
+          console.log('received chat event:', message.data)
+          const msgId = message.data.id;
+          const newMessage = [message.data.id, message.data.timestamp, message.data.nick, message.data.message, ""]
+          setMessages(draft => {
+            if(draft.obj[msgId] === undefined) {
+              draft.obj[msgId] = newMessage;
+              draft.list = [...draft.list, newMessage].sort((a, b) => a[1] > b[1] ? 1 : -1);
+            }
+          });
+          break;
+        case 'translation':
+          console.log('received translation event:', message.data)
+          // the server is aware which language the client wants, no need to filter it here then
+          const newTranslation = [message.data.source_id, message.data.message];
+          setTranslationsById(draft => ({...draft, [newTranslation[0]]: "(" + newTranslation[1] + ")"}));
+          break;
+      }
+    });
+    setWs(w);
+  }, [url]);
 
   // use @giphy/js-fetch-api to fetch gifs, instantiate with your api key
   //const gf = new GiphyFetch('TgMRPGpev8ywWOxgPIX7QIWLmu1ZeETx')
@@ -38,8 +87,7 @@ const LiveChat = () => {
     scrollToBottom()
   }, [messages.list, translationsById]);
 
-  const socketRef = useRef();
-  //const localeRef = useRef();
+  //const socketRef = useRef();
   const [locale, setLocale] = useState(navigator.language || 'en');
 
   useEffect(() => {
@@ -51,9 +99,12 @@ const LiveChat = () => {
     }
   }, []);
 
+  /*
   useEffect(() => {
     setTranslationsById(() => ({}));
     setMessages(() => ({list: [], obj: {}}));
+  }, [url]);
+  useEffect(() => {
     socketRef.current = new ReconnectingWebSocket(url);
     socketRef.current.addEventListener('open', () => {
       socketRef.current.send(JSON.stringify({event: "login", data: {}}));
@@ -91,9 +142,10 @@ const LiveChat = () => {
     });
     return () => socketRef.current.close();
   }, [url]);
+  */
 
   const handleUserMessage = (msg) => {
-    socketRef.current.send(JSON.stringify({"event": "chat", data: {"message": msg}}));
+    ws?.send(JSON.stringify({"event": "chat", data: {"message": msg}}));
   };
 
   const handleSend = (e) => {
