@@ -42,15 +42,26 @@ export const ChatHeading = styled.div`
   }
 `;
 
+export const ChatFooter = styled.div`
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 0;
+`;
+
 export const ChatBody = styled.div`
   display: flex;
   flex-direction: column;
+  position: relative;
   width: 100%;
   height: 100%;
   justify-content: center;
   border-top: 0.5px solid rgba(240, 243, 246, 0.1);
   border-radius: 32px;
-
+  overflow-y: auto;
+  
   i {
     font-weight: 900;
   }
@@ -58,4 +69,24 @@ export const ChatBody = styled.div`
   @media only screen and (max-width: 1024px) {
     min-height: 300px;
   }
+`;
+
+export const ChatMessages = styled.div`
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  width: 95%;
+  padding-left: 2%;
+  padding-right: 2%;
+  //height: 80vh;
+  text-align: left;
+  //overflow-y: scroll;
+  border-top: 0.5px solid rgba(240, 243, 246, 0.1);
+  border-radius: 32px;
+`;
+
+export const LoginLogout = styled.div`
+  display: flex;
+  flex-direction: row;
+  border-top: 5px;
 `;
