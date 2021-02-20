@@ -11,8 +11,8 @@ import {useImmer} from "use-immer";
 import Moment from "react-moment";
 import 'moment/locale/de';
 import 'moment/locale/es';
-//import {Grid} from "@giphy/react-components";
-//import {GiphyFetch} from "@giphy/js-fetch-api";
+import {emojify} from "react-emojione";
+import he from 'he';
 
 const URL = `${process.env.REACT_APP_WS_URL}`;
 const CLIENTID = `${process.env.REACT_APP_CLIENT_ID}`;
@@ -21,15 +21,10 @@ const LiveChat = () => {
   const [url, setUrl] = useState(URL + "?language=" + (navigator.language?.toLowerCase() || 'en'));
   const [messages, setMessages] = useImmer({list: [], obj: {}});
   const [input, setInput] = useState('');
-  const [translationsById, setTranslationsById] = useImmer({})
+  const [translationsById, setTranslationsById] = useImmer({});
   const [idtoken, setIdtoken] = useState("");
   const messagesEndRef = useRef();
   const [ws, setWs] = useState(null);
-  //const prevWs = useRef(null);
-
-  //useEffect(() => {
-  //  prevWs.current = ws;
-  //});
 
   useEffect(() => {
     setTranslationsById(() => ({}));
@@ -45,17 +40,20 @@ const LiveChat = () => {
     });
     w.addEventListener('message', (e) => {
       console.log('ws data:', e.data)
-      //console.log('messages:', messages);
-      //console.log('messagesbyid:', messagesById)
       const message = JSON.parse(e.data);
       switch(message.event) {
-        case 'login':
-          console.log('received login event:', message.data)
+        case 'user':
+          console.log('received user event:', message.data)
+          if(!message.data.history) {
+            if(message.data.tags.action === 'login') {
+              console.log("logged in user");
+            }
+          }
           break;
         case 'chat':
           console.log('received chat event:', message.data)
           const msgId = message.data.id;
-          const newMessage = [message.data.id, message.data.timestamp, message.data.nick, message.data.message, ""]
+          const newMessage = [message.data.id, message.data.created, message.data.source.user.nick || message.data.source.plugin_name + ' (bot)', he.decode(message.data.tags.message), ""]
           setMessages(draft => {
             if(draft.obj[msgId] === undefined) {
               draft.obj[msgId] = newMessage;
@@ -63,21 +61,37 @@ const LiveChat = () => {
             }
           });
           break;
+        case 'chats':
+          console.log('received chat events:', message.data)
+          setMessages(draft => {
+            message.data.map((d) => {
+              if(draft.obj[d.data.id] === undefined) {
+                draft.obj[d.data.id] = [d.data.id, d.data.created, d.data.source.user.nick || d.data.source.plugin_name + ' (bot)', he.decode(d.data.tags.message), ""];
+                draft.list = [...draft.list, [d.data.id, d.data.created, d.data.source.user.nick || d.data.source.plugin_name + ' (bot)', he.decode(d.data.tags.message), ""]];
+              }
+            });
+            draft.list = draft.list.sort((a, b) => a[1] > b[1] ? 1 : -1);
+          });
+          break;
         case 'translation':
           console.log('received translation event:', message.data)
           // the server is aware which language the client wants, no need to filter it here then
-          const newTranslation = [message.data.source_id, message.data.message];
-          setTranslationsById(draft => ({...draft, [newTranslation[0]]: "(" + newTranslation[1] + ")"}));
+          const newTranslation = [message.data.tags.source_id, message.data.tags.message];
+          setTranslationsById(draft => ({...draft, [newTranslation[0]]: "(" + he.decode(newTranslation[1]) + ")"}));
+          break;
+        case 'translations':
+          console.log('received translations event:', message.data)
+          // the server is aware which language the client wants, no need to filter it here then
+          setTranslationsById(draft => {
+            message.data.map((d) => {
+              draft[d.data.tags.source_id] = '(' + he.decode(d.data.tags.message) + ')';
+            });
+          })
           break;
       }
     });
     setWs(w);
   }, [url]);
-
-  // use @giphy/js-fetch-api to fetch gifs, instantiate with your api key
-  //const gf = new GiphyFetch('TgMRPGpev8ywWOxgPIX7QIWLmu1ZeETx')
-  // configure your fetch: fetch 10 gifs at a time as the user scrolls (offset is handled by the grid)
-  //const fetchGifs = (offset) => gf.trending({offset, limit: 10})
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({behavior: "smooth"})
@@ -98,51 +112,6 @@ const LiveChat = () => {
       setLocale('en')
     }
   }, []);
-
-  /*
-  useEffect(() => {
-    setTranslationsById(() => ({}));
-    setMessages(() => ({list: [], obj: {}}));
-  }, [url]);
-  useEffect(() => {
-    socketRef.current = new ReconnectingWebSocket(url);
-    socketRef.current.addEventListener('open', () => {
-      socketRef.current.send(JSON.stringify({event: "login", data: {}}));
-    });
-    socketRef.current.addEventListener('error', (e) => {
-      console.log('ws error:', e)
-    });
-    socketRef.current.addEventListener('message', (e) => {
-      console.log('ws data:', e.data)
-      //console.log('messages:', messages);
-      //console.log('messagesbyid:', messagesById)
-      const message = JSON.parse(e.data);
-      switch(message.event) {
-        case 'login':
-          console.log('received login event:', message.data)
-          break;
-        case 'chat':
-          console.log('received chat event:', message.data)
-          const msgId = message.data.id;
-          const newMessage = [message.data.id, message.data.timestamp, message.data.nick, message.data.message, ""]
-          setMessages(draft => {
-            if(draft.obj[msgId] === undefined) {
-              draft.obj[msgId] = newMessage;
-              draft.list = [...draft.list, newMessage].sort((a, b) => a[1] > b[1] ? 1 : -1);
-            }
-          });
-          break;
-        case 'translation':
-          console.log('received translation event:', message.data)
-          // the server is aware which language the client wants, no need to filter it here then
-          const newTranslation = [message.data.source_id, message.data.message];
-          setTranslationsById(draft => ({...draft, [newTranslation[0]]: "(" + newTranslation[1] + ")"}));
-          break;
-      }
-    });
-    return () => socketRef.current.close();
-  }, [url]);
-  */
 
   const handleUserMessage = (msg) => {
     ws?.send(JSON.stringify({"event": "chat", data: {"message": msg}}));
@@ -174,6 +143,12 @@ const LiveChat = () => {
   const handleLocaleChange = (event) => {
     setLocale(event.target.value);
   }
+
+  const handleInput = (e) => {
+    const content = e.target.value;
+    const transformed = emojify(content, {output: 'unicode'});
+    setInput(transformed);
+  };
 
   useEffect(() => {
     console.log("update url...")
@@ -219,9 +194,7 @@ const LiveChat = () => {
         <ChatFooter>
           <form onSubmit={e => handleSend(e)}
                 style={{display: 'flex', clear: 'both', width: '100%', paddingBottom: '10px'}}>
-            <input style={{width: '100%'}} onChange={e => {
-              setInput(e.target.value);
-            }} value={input}/>
+            <input style={{width: '100%', textAlign: 'left', paddingLeft: '3px'}} onChange={handleInput} value={input}/>
             <button style={{width: '75px'}} type="submit">Send</button>
           </form>
           <LoginLogout>
