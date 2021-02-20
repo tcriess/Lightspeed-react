@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useRef, useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
 import {
   ChatContainer,
   ChatMain,
@@ -127,7 +127,6 @@ const LiveChat = () => {
 
   const responseGoogle = (response) => {
     console.log("login response:", response);
-    //socketRef.current.send(JSON.stringify({event: "login", data: {"id_token": response.tokenId}}));
     if(response.tokenId !== undefined) {
       setIdtoken(response.tokenId);
     } else {
