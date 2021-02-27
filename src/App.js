@@ -1,24 +1,24 @@
 import "./App.css";
-import React, { useEffect, useReducer } from "react";
-import { useSocket } from "./context/SocketContext";
-import { useRTC } from "./context/RTCPeerContext";
+import React, {useEffect, useReducer} from "react";
+import {useSocket} from "./context/SocketContext";
+import {useRTC} from "./context/RTCPeerContext";
 import VideoPlayer from "./components/VideoPlayer";
 import VideoDetails from "./components/VideoDetails";
 import LiveChat from "./components/LiveChat";
 import Header from "./components/Header";
-import { VideoContainer, MainContainer } from "./styles/appStyles";
+import {VideoContainer, MainContainer} from "./styles/appStyles";
 
 const appReducer = (state, action) => {
-  switch (action.type) {
+  switch(action.type) {
     case "initStream": {
-      return { ...state, stream: action.stream };
+      return {...state, stream: action.stream};
     }
     case "info": {
-      return { ...state, viewers: action.viewers };
+      return {...state, viewers: action.viewers};
     }
 
     default: {
-      return { ...state };
+      return {...state};
     }
   }
 };
@@ -30,28 +30,28 @@ const initialState = {
 
 const App = () => {
   const [state, dispatch] = useReducer(appReducer, initialState);
-  const { pc } = useRTC();
-  const { socket } = useSocket();
+  const {pc} = useRTC();
+  const {socket} = useSocket();
 
   // Offer to receive 1 audio, and 1 video tracks
-  pc.addTransceiver("audio", { direction: "recvonly" });
+  pc.addTransceiver("audio", {direction: "recvonly"});
   // pc.addTransceiver('video', { 'direction': 'recvonly' })
-  pc.addTransceiver("video", { direction: "recvonly" });
+  pc.addTransceiver("video", {direction: "recvonly"});
 
   pc.ontrack = (event) => {
     const {
-      track: { kind },
+      track: {kind},
       streams,
     } = event;
 
-    if (kind === "video") {
-      dispatch({ type: "initStream", stream: streams[0] });
+    if(kind === "video") {
+      dispatch({type: "initStream", stream: streams[0]});
     }
   };
 
   pc.onicecandidate = (e) => {
-    const { candidate } = e;
-    if (candidate) {
+    const {candidate} = e;
+    if(candidate) {
       console.log("Candidate success");
       socket.send(
         JSON.stringify({
@@ -62,23 +62,23 @@ const App = () => {
     }
   };
 
-  if (socket) {
-    socket.onmessage = async (event) => {
+  if(socket) {
+    socket.onmessage = async(event) => {
       const msg = JSON.parse(event.data);
 
-      if (!msg) {
+      if(!msg) {
         console.log("Failed to parse msg");
         return;
       }
 
       const offerCandidate = msg.data;
 
-      if (!offerCandidate) {
+      if(!offerCandidate) {
         console.log("Failed to parse offer msg data");
         return;
       }
 
-      switch (msg.event) {
+      switch(msg.event) {
         case "offer":
           console.log("Offer");
           pc.setRemoteDescription(offerCandidate);
@@ -92,7 +92,7 @@ const App = () => {
                 data: answer,
               })
             );
-          } catch (e) {
+          } catch(e) {
             console.error(e.message);
           }
 
@@ -115,8 +115,8 @@ const App = () => {
       <Header></Header>
       <MainContainer>
         <VideoContainer>
-          <VideoPlayer src={state.stream} />
-          <VideoDetails viewers={state.viewers} />
+          <VideoPlayer src={state.stream}/>
+          <VideoDetails viewers={state.viewers}/>
         </VideoContainer>
         <LiveChat></LiveChat>
       </MainContainer>

@@ -6,15 +6,19 @@ import reportWebVitals from "./reportWebVitals";
 import SocketProvider from "./context/SocketContext";
 import RTCProvider from "./context/RTCPeerContext";
 import GlobalStyle from "./styles/globalStyles";
+import {ReactKeycloakProvider} from '@react-keycloak/web';
+import keycloak from "./keycloak";
 
 ReactDOM.render(
   <>
-    <GlobalStyle />
-    <SocketProvider>
-      <RTCProvider>
-        <App />
-      </RTCProvider>
-    </SocketProvider>
+    <GlobalStyle/>
+    <ReactKeycloakProvider authClient={keycloak}>
+      <SocketProvider>
+        <RTCProvider>
+          <App/>
+        </RTCProvider>
+      </SocketProvider>
+    </ReactKeycloakProvider>
   </>,
   document.getElementById("root")
 );

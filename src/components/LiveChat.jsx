@@ -13,6 +13,7 @@ import 'moment/locale/de';
 import 'moment/locale/es';
 import {emojify} from "react-emojione";
 import he from 'he';
+import {useKeycloak} from "@react-keycloak/web";
 
 const URL = `${process.env.REACT_APP_WS_URL}`;
 const CLIENTID = `${process.env.REACT_APP_CLIENT_ID}`;
@@ -25,6 +26,11 @@ const LiveChat = () => {
   const [idtoken, setIdtoken] = useState("");
   const messagesEndRef = useRef();
   const [ws, setWs] = useState(null);
+  const { keycloak, initialized } = useKeycloak()
+
+  useEffect( () => {
+    keycloak.onAuthSuccess = () => { setIdtoken(keycloak.idToken); };
+  }, []);
 
   useEffect(() => {
     setTranslationsById(() => ({}));
@@ -153,11 +159,48 @@ const LiveChat = () => {
     console.log("update url...")
     let u = URL + "?language=" + locale;
     if(idtoken !== "") {
-      u = u + "&provider=google&id_token=" + idtoken;
+      u = u + "&provider=keycloak&id_token=" + idtoken;
     }
     console.log("setting url: ", u);
     setUrl(u);
   }, [locale, idtoken]);
+
+  /*
+  <GoogleLogin
+              disabled={idtoken !== ''}
+              clientId={CLIENTID}
+              buttonText="Login"
+              onSuccess={responseGoogle}
+              onFailure={responseGoogle}
+              cookiePolicy={'single_host_origin'}
+              isSignedIn={true}
+            />
+            <div style={{width: '10px'}}/>
+            <GoogleLogout
+              disabled={idtoken === ''}
+              clientId={CLIENTID}
+              buttonText="Logout"
+              onLogoutSuccess={logoutGoogle}
+            >
+            </GoogleLogout>
+   */
+
+  const handleLogin = () => {
+    keycloak.login();
+    console.log("login called.")
+    if (keycloak.authenticated) {
+      console.log("authenticated, token:", keycloak.idToken)
+      setIdtoken(keycloak.idToken);
+    } else {
+      console.log("not yet authenticated")
+    }
+  };
+
+  const handleLogout = () => {
+    keycloak.logout();
+    setIdtoken("");
+  };
+
 
   return (
     <ChatContainer>
@@ -197,23 +240,11 @@ const LiveChat = () => {
             <button style={{width: '75px'}} type="submit">Send</button>
           </form>
           <LoginLogout>
-            <GoogleLogin
-              disabled={idtoken !== ''}
-              clientId={CLIENTID}
-              buttonText="Login"
-              onSuccess={responseGoogle}
-              onFailure={responseGoogle}
-              cookiePolicy={'single_host_origin'}
-              isSignedIn={true}
-            />
-            <div style={{width: '10px'}}/>
-            <GoogleLogout
-              disabled={idtoken === ''}
-              clientId={CLIENTID}
-              buttonText="Logout"
-              onLogoutSuccess={logoutGoogle}
-            >
-            </GoogleLogout>
+            <div>{`User is ${
+              !keycloak.authenticated ? 'NOT ' : keycloak.idTokenParsed.email + ' '
+            }authenticated`}</div>
+            {!keycloak.authenticated && <button onClick={handleLogin}>Login</button>}
+            {!!keycloak.authenticated && <button onClick={handleLogout}>Logout</button>}
           </LoginLogout>
         </ChatFooter>
       </ChatMain>
