@@ -3,3 +3,4 @@
 .DS_Store
 .eslintcache
 /build/
+/public/keycloak.json
