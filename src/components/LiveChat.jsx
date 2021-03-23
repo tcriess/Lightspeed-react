@@ -62,7 +62,7 @@ const LiveChat = () => {
           setMessages(draft => {
             if(draft.obj[msgId] === undefined) {
               draft.obj[msgId] = newMessage;
-              draft.list = [...draft.list, newMessage].sort((a, b) => a[1] > b[1] ? 1 : -1);
+              draft.list = [...draft.list, newMessage].sort((a, b) => Date.parse(a[1]) > Date.parse(b[1]) ? 1 : -1);
             }
           });
           break;
@@ -75,7 +75,7 @@ const LiveChat = () => {
                 draft.list = [...draft.list, [d.data.id, d.data.created, d.data.source.user.nick || d.data.source.plugin_name + ' (bot)', d.data.tags.message, ""]];
               }
             });
-            draft.list = draft.list.sort((a, b) => a[1] > b[1] ? 1 : -1);
+            draft.list = draft.list.sort((a, b) => Date.parse(a[1]) > Date.parse(b[1]) ? 1 : -1);
           });
           break;
         case 'translation':
@@ -118,6 +118,13 @@ const LiveChat = () => {
   }, []);
 
   const handleUserMessage = (msg) => {
+    keycloak.updateToken(60).then(function(refreshed) {
+      if (refreshed) {
+        setIdtoken(keycloak.idToken);
+      }
+    }).catch(function() {
+      console.log('Failed to refresh the token, or the session has expired');
+    });
     ws?.send(JSON.stringify({"event": "chat", data: {"message": msg}}));
   };
 
@@ -179,7 +186,6 @@ const LiveChat = () => {
           </select>
         </ChatHeading>
         <ChatBody>
-
           <ChatMessages>
             {
               messages.list.map((m) => (
