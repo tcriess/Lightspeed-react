@@ -11,7 +11,6 @@ import Moment from "react-moment";
 import 'moment/locale/de';
 import 'moment/locale/es';
 import {emojify} from "react-emojione";
-import he from 'he';
 import {useKeycloak} from "@react-keycloak/web";
 
 const URL = `${process.env.REACT_APP_WS_URL}` || (window.location.protocol === 'https:' ? "wss://" + window.location.host + "/chat/default" : "ws://" + window.location.host + "/chat/default");
@@ -165,7 +164,6 @@ const LiveChat = () => {
     keycloak.logout();
     setIdtoken("");
   };
-
 
   return (
     <ChatContainer>
