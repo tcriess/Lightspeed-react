@@ -22,7 +22,8 @@ const LiveChat = () => {
   const [idtoken, setIdtoken] = useState("");
   const messagesEndRef = useRef();
   const ws = useRef();
-  const {keycloak, initialized} = useKeycloak()
+  const {keycloak, initialized} = useKeycloak();
+  const [connected, setConnected] = useState(false);
 
   useEffect(() => {
     keycloak.onAuthSuccess = () => {
@@ -33,9 +34,10 @@ const LiveChat = () => {
   useEffect(() => {
     const w = new ReconnectingWebSocket(URL);
     w.addEventListener('open', () => {
-      w.send(JSON.stringify({event: "login", data: {}}));
+      setConnected(true);
     });
     w.addEventListener('error', (e) => {
+      setConnected(false);
       console.log('ws error:', e)
     });
     w.addEventListener('message', (e) => {
@@ -199,7 +201,7 @@ const LiveChat = () => {
           <form onSubmit={e => handleSend(e)}
                 style={{display: 'flex', clear: 'both', width: '100%', paddingBottom: '10px'}}>
             <input style={{width: '100%', textAlign: 'left', paddingLeft: '3px'}} onChange={handleInput} value={input}/>
-            <button style={{width: '75px'}} type="submit">Send</button>
+            <button style={{width: '75px'}} type="submit" disabled={!connected}>Send</button>
           </form>
           {initialized &&
           <LoginLogout>
