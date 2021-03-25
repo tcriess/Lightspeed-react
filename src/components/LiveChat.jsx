@@ -16,13 +16,12 @@ import {useKeycloak} from "@react-keycloak/web";
 const URL = `${process.env.REACT_APP_WS_URL}` || (window.location.protocol === 'https:' ? "wss://" + window.location.host + "/chat/default" : "ws://" + window.location.host + "/chat/default");
 
 const LiveChat = () => {
-  const [url, setUrl] = useState(URL + "?language=" + (navigator.language?.toLowerCase().slice(0, 2) || 'en'));
   const [messages, setMessages] = useImmer({list: [], obj: {}});
   const [input, setInput] = useState('');
   const [translationsById, setTranslationsById] = useImmer({});
   const [idtoken, setIdtoken] = useState("");
   const messagesEndRef = useRef();
-  const [ws, setWs] = useState(null);
+  const ws = useRef();
   const {keycloak, initialized} = useKeycloak()
 
   useEffect(() => {
@@ -32,11 +31,7 @@ const LiveChat = () => {
   }, []);
 
   useEffect(() => {
-    setTranslationsById(() => ({}));
-    setMessages(() => ({list: [], obj: {}}));
-
-    ws?.close();
-    const w = new ReconnectingWebSocket(url);
+    const w = new ReconnectingWebSocket(URL);
     w.addEventListener('open', () => {
       w.send(JSON.stringify({event: "login", data: {}}));
     });
@@ -95,8 +90,8 @@ const LiveChat = () => {
           break;
       }
     });
-    setWs(w);
-  }, [url]);
+    ws.current = w;
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({behavior: "smooth"})
@@ -106,10 +101,11 @@ const LiveChat = () => {
     scrollToBottom()
   }, [messages.list, translationsById]);
 
-  const [locale, setLocale] = useState(navigator.language.toLowerCase().slice(0, 2) || 'en');
+  const [locale, setLocale] = useState('en');
 
   useEffect(() => {
-    let lang = locale.toLowerCase().slice(0, 2);
+    let lang = navigator.language.toLowerCase().slice(0,2);
+    if (lang === locale) return;
     if(lang.match(/en|de|es/i)) {
       setLocale(lang);
     } else {
@@ -125,7 +121,7 @@ const LiveChat = () => {
     }).catch(function() {
       console.log('Failed to refresh the token, or the session has expired');
     });
-    ws?.send(JSON.stringify({"event": "chat", data: {"message": msg}}));
+    ws.current?.send(JSON.stringify({"event": "chat", data: {"message": msg}}));
   };
 
   const handleSend = (e) => {
@@ -147,13 +143,8 @@ const LiveChat = () => {
   };
 
   useEffect(() => {
-    console.log("update url...")
-    let u = URL + "?language=" + locale;
-    if(idtoken !== "") {
-      u = u + "&provider=keycloak&id_token=" + idtoken;
-    }
-    console.log("setting url: ", u);
-    setUrl(u);
+    console.log("update id token / locale")
+    ws.current?.send(JSON.stringify({event: "login", data: {id_token: idtoken, provider: "keycloak", language: locale}}));
   }, [locale, idtoken]);
 
   const handleLogin = () => {
@@ -170,6 +161,7 @@ const LiveChat = () => {
   const handleLogout = () => {
     keycloak.logout();
     setIdtoken("");
+    ws.current?.send(JSON.stringify({event: "logout", data: {}}));
   };
 
   return (
