@@ -24,6 +24,7 @@ const LiveChat = () => {
   const ws = useRef();
   const {keycloak, initialized} = useKeycloak();
   const [connected, setConnected] = useState(false);
+  const [locale, setLocale] = useState(navigator.language.toLowerCase().slice(0,2).match(/en|de|es/i) ? navigator.language.toLowerCase().slice(0,2) : 'en');
 
   useEffect(() => {
     keycloak.onAuthSuccess = () => {
@@ -102,18 +103,6 @@ const LiveChat = () => {
   useEffect(() => {
     scrollToBottom()
   }, [messages.list, translationsById]);
-
-  const [locale, setLocale] = useState('en');
-
-  useEffect(() => {
-    let lang = navigator.language.toLowerCase().slice(0,2);
-    if (lang === locale) return;
-    if(lang.match(/en|de|es/i)) {
-      setLocale(lang);
-    } else {
-      setLocale('en')
-    }
-  }, []);
 
   const handleUserMessage = (msg) => {
     keycloak.updateToken(60).then(function(refreshed) {
